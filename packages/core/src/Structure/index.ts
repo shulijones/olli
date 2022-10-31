@@ -354,6 +354,15 @@ function nodeToDesc(node: AccessibilityTreeNode, olliVisSpec: OlliVisSpec, facet
         const axis = guide as Axis;
         const legend = guide as Legend;
 
+        const averageValue = (node: AccessibilityTreeNode, axis: Axis) => {
+            // console.log(olliVisSpec);
+            // console.log(node.selected);
+            if (axis.scaleType !== 'quantitative') return '';
+            return `The average value is ${
+                Math.round(chart.data.reduce((a, b) => a + Number(b[axis.field]), 0)
+                    /chart.data.length)}.`;
+        }
+
         switch (node.type) {
             case 'multiView':
                 return `A faceted chart ${chartTitle(olliVisSpec)} with ${node.children.length} views.`;
@@ -361,7 +370,7 @@ function nodeToDesc(node: AccessibilityTreeNode, olliVisSpec: OlliVisSpec, facet
                 return `${indexStr(index, length)} A ${chartType(chart)} ${chartTitle(chart)} ${listAxes(chart)}.`;
             case 'xAxis':
             case 'yAxis':
-                return `${axis.axisType.toUpperCase()}-axis ${guideTitle(axis)} ${axisScaleType(axis)} ${guideValues(axis)}. ${facetValueStr(facetValue)}`;
+                return `${axis.axisType.toUpperCase()}-axis ${guideTitle(axis)} ${axisScaleType(axis)} ${guideValues(axis)}. ${averageValue(node, axis)} ${facetValueStr(facetValue)}`;
             case 'legend':
                 return `Legend ${guideTitle(legend)} ${legendChannel(legend)} ${guideValues(axis)}. ${facetValueStr(facetValue)}`;
             case 'grid':
