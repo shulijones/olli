@@ -355,12 +355,10 @@ function nodeToDesc(node: AccessibilityTreeNode, olliVisSpec: OlliVisSpec, facet
         const legend = guide as Legend;
 
         const averageValue = (node: AccessibilityTreeNode, axis: Axis) => {
-            // console.log(olliVisSpec);
-            // console.log(node.selected);
             if (axis.scaleType !== 'quantitative') return '';
             return `The average value is ${
-                Math.round(chart.data.reduce((a, b) => a + Number(b[axis.field]), 0)
-                    /chart.data.length)}.`;
+                Math.round(node.selected.reduce((a, b) => a + Number(b[axis.field]), 0)
+                    /node.selected.length)}.`;
         }
 
         switch (node.type) {
