@@ -4,6 +4,11 @@ title: "Menu Prototyping"
 ---
 
 <div>
+  <p>
+    This is a prototype for a menu that would control which options appear in a user's Olli
+    tree and what order they appear in. To change the order, use command-up and command-down
+    while focused on the item whose order you want to change.
+  </p>
   <div class="options-set">
     <legend>Token Options</legend>
     <div> <input type="checkbox" id="view-number"> <label for="view-number">View Number</label> </div>
@@ -41,11 +46,9 @@ title: "Menu Prototyping"
       const thisDiv = thisCheckbox.parentNode;
       const previousDiv = thisDiv.previousElementSibling;
       if (previousDiv != null && previousDiv.nodeName !== "LEGEND") {
-        thisDiv.parentNode.insertBefore(thisDiv, previousDiv);
-        console.log(thisDiv);
-        thisDiv.focus();
-        thisCheckbox.setAttribute('aria-selected', true); 
-        // TODO focusing doesn't work for some reason, tried putting focus on thisCheckbox and thisDiv
+        // Note: don't want to call insertBefore(thisDiv, previousDiv)
+        // because first parameter to insertBefore loses focus
+        thisDiv.insertAdjacentElement('beforebegin', previousDiv);
       }
     } else if (e.metaKey && e.key === 'ArrowDown') {
       const thisCheckbox = document.activeElement;
@@ -54,16 +57,10 @@ title: "Menu Prototyping"
       if (nextDiv != null) {
         thisDiv.parentNode.insertBefore(nextDiv, thisDiv);
       }
-      // Don't have to change focus because we moved nextDiv, not thisDiv
     }
   })
-  
+
   function changeAssociatedInputState(input) {
-    const assocInput = document.getElementById(`${input.id}-input`);
-    if (input.checked) {
-      assocInput.disabled = false;
-    } else {
-      assocInput.disabled = true;
-    }
+    document.getElementById(`${input.id}-input`).disabled = !input.checked;
   }
 </script>
