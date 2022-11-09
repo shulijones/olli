@@ -9,14 +9,19 @@ title: "Menu Prototyping"
     tree and what order they appear in. To change the order, use command-up and command-down
     while focused on the item whose order you want to change.
   </p>
+
+  <img src="img/multiSeriesLineChart.JPG">
+
+  <ul id="description"></ul>
+
   <div class="options-set">
     <legend>Token Options</legend>
-    <div> <input type="checkbox" id="view-number"> <label for="view-number">View Number</label> </div>
-    <div> <input type="checkbox" id="view-name"> <label for="view-name">View Name</label> </div>
-    <div> <input type="checkbox" id="axis-location"> <label for="axis-location">Axis Location</label> </div>
+    <div> <input type="checkbox" id="viewNumber"> <label for="viewNumber">View Number</label> </div>
+    <div> <input type="checkbox" id="viewName"> <label for="viewName">View Name</label> </div>
+    <div> <input type="checkbox" id="axisLocation"> <label for="axisLocation">Axis Location</label> </div>
     <div> 
-      <input type="checkbox" id="relative-value" onclick="changeAssociatedInputState(this)"> <label for="relative-value">Relative Value</label> 
-      <input type="number" min='1' max='10' id="relative-value-input" disabled> <label for="relative-value-input">Buckets</label>
+      <input type="checkbox" id="relativeValue" onclick="changeAssociatedInputState(this)"> <label for="relativeValue">Relative Value</label> 
+      <input type="number" min='1' max='10' id="relativeValue-input" disabled> <label for="relativeValue-input">Buckets</label>
     </div>
   </div>
 
@@ -26,6 +31,16 @@ title: "Menu Prototyping"
     <div> <input type="checkbox" id="max"> <label for="max">Maximum</label> </div>
     <div> <input type="checkbox" id="avg"> <label for="avg">Average</label> </div>
     <div> <input type="checkbox" id="trend"> <label for="trend">Trend</label> </div>
+  </div>
+
+  <div class="options-set">
+    <legend>Verbosity (least to most)</legend>
+    <input type="radio" id="v1" name="verbosity" value="1">
+    <label for="v1">1</label><br>
+    <input type="radio" id="v2" name="verbosity" value="2">
+    <label for="v2">2</label><br>
+    <input type="radio" id="v3" name="verbosity" value="3" checked>
+    <label for="v3">3</label><br>
   </div>
 </div>
 
@@ -40,6 +55,10 @@ title: "Menu Prototyping"
 </style>
 
 <script>
+  /***
+   *  Event listeners for the menu
+   ***/
+  
   document.addEventListener('keydown', (e) => {
     if (e.metaKey && e.key === 'ArrowUp') {
       const thisCheckbox = document.activeElement;
@@ -48,7 +67,9 @@ title: "Menu Prototyping"
       if (previousDiv != null && previousDiv.nodeName !== "LEGEND") {
         // Note: don't want to call insertBefore(thisDiv, previousDiv)
         // because first parameter to insertBefore loses focus
-        thisDiv.insertAdjacentElement('beforebegin', previousDiv);
+        thisDiv.insertAdjacentElement('afterend', previousDiv);
+        thisCheckbox.focus();
+        thisCheckbox.setAttribute('aria-active', true);
       }
     } else if (e.metaKey && e.key === 'ArrowDown') {
       const thisCheckbox = document.activeElement;
@@ -63,4 +84,195 @@ title: "Menu Prototyping"
   function changeAssociatedInputState(input) {
     document.getElementById(`${input.id}-input`).disabled = !input.checked;
   }
+
+  const optionSets = document.getElementsByClassName("options-set");
+  for (optionSet of optionSets) {
+    for (option of optionSet.children) {
+      option.setAttribute('onchange', 'displayRootDescription()');
+    }
+  }
+
+  /***
+   *  Data for the description 
+   ***/
+
+  const tree = {
+    type: "root",
+    tokens: ["A faceted chart with 5 views."],
+    children: [
+      {
+        type: "chart",
+        tokens: {
+          viewNumber: '1 of 5.',
+          name: 'A line chart titled "MSFT" with axes "date" and "price".'
+        },
+        children: [
+          {
+            type: 'xAxis',
+            tokens: {
+              name: 'X-axis titled "date"', 
+              values: ' for a temporal scale with values from "Jan 1, 2000" to "Jan 1, 2010".',
+              viewName: '"MSFT".'
+            },
+            children: []
+          },
+          {
+            type: 'yAxis',
+            tokens: {
+              name: 'Y-axis titled "price"',
+              values: ' for a quantitative scale with values from "0" to "800".',
+              avg: 'The average value is 25.',
+              min: 'The minimum value is 17.65.',
+              max: 'The maximum value is 39.81.',
+              trend: 'The trend is flat.',
+              viewName: '"MSFT".'
+            },
+            children: []
+          }
+        ]
+      },
+      {
+        type: 'chart',
+        tokens: {
+          viewNumber: '2 of 5.',
+          name: 'A line chart titled "AMZN" with axes "date" and "price".'
+        },
+        children: [
+          {
+            type: 'xAxis',
+            tokens: {
+              viewNumber: '2 of 5.',
+              name: 'X-axis titled "date"', 
+              span: ' for a temporal scale with values from "Jan 1, 2000" to "Jan 1, 2010".',
+              viewName: '"AMZN".'
+            },
+            children: [
+              {
+                type: 'section',
+                tokens: {
+                  viewNumber: '2 of 5.',
+                  span: 'Dec 31, 1997 to Jan 1, 2000.', 
+                  values: '0 values.',
+                  viewName: '"AMZN".',
+                  axisLocation: 'Grid cell 1 of 6.'
+                },
+                children: []
+              },
+              {
+                type: 'section',
+                tokens: {
+                  viewNumber: '2 of 5.',
+                  span: 'Jan 1, 2000 to Jan 1, 2002.', 
+                  values: '24 values.',
+                  viewName: '"AMZN".',
+                  axisLocation: 'Grid cell 2 of 6.'
+                },
+                children: [
+                  {
+                    type: 'datapoint',
+                    tokens: {
+                      viewNumber: '2 of 5.',
+                      value1: '64.56',
+                      value2: '946702800000',
+                      viewName: '"AMZN".',
+                      relativeValue: '1',
+                    },
+                    children: []
+                  },
+                  {
+                    type: 'datapoint',
+                    tokens: {
+                      viewNumber: '2 of 5.',
+                      value1: '68.87',
+                      value2: '949381200000',
+                      viewName: '"AMZN".',
+                      relativeValue: '1',
+                    },
+                    children: []
+                  },
+                ]
+              },
+            ]
+          },
+          {
+            type: 'yAxis',
+            tokens: {
+              viewNumber: '2 of 5.',
+              name: 'Y-axis titled "price"',
+              span: 'for a quantitative scale with values from "0" to "800".',
+              avg: ['avg 48', 'Average is 48.', 'The average value is 48.'],
+              min: ['min 5.97,', 'Minimum is 5.97.', 'The minimum value is 5.97.'],
+              max: ['max 135.91,', 'Maximum is 135.91.', 'The maximum value is 135.91.'],
+              trend: 'The trend is flat.',
+              viewName: '"AMZN".'
+            },
+            children: []
+          }
+        ]
+      }
+    ]
+  }
+
+  displayRootDescription();
+
+  function displayRootDescription() {
+    const desc = document.getElementById('description');
+    desc.innerHTML = '';
+    displayDescription(tree, desc);
+  }
+
+  // `tree` is the tree to generate a description for
+  // `dom` is where to add that description
+  // `flags` are any description tokens to turn on
+  function displayDescription(tree, dom, flags=[]) {
+    const root = document.createElement('li');
+    root.setAttribute('tabindex', 0);
+    const verbosity = parseInt(document.querySelector('input[name="verbosity"]:checked').value);
+
+    let innerText = '';
+    for (token of Object.keys(tree.tokens)) {
+      const checkbox = document.getElementById(token);
+      let tokenText = tree.tokens[token];
+      if (Array.isArray(tokenText)) { 
+        tokenText = tokenText[verbosity - 1];  // one-indexed
+      }
+
+      if (checkbox == null || flags.includes(token)) { 
+        // if no setting or flag on, always included
+        innerText += tokenText + ' ';
+      } else if (checkbox.checked) { 
+        // if setting exists, only add if checked
+        innerText += tokenText + ' ';
+      }
+    }
+    root.innerText = innerText;
+
+
+    if (tree.children.length > 0) {
+      const container = document.createElement('ul');
+      container.setAttribute('tabindex', 0);
+      for (child of tree.children) {
+        displayDescription(child, container);
+      }
+      root.appendChild(container);
+    }
+    dom.appendChild(root);
+  }
+
+  /***
+   *  Event listeners for the description
+   ***/
+
+  const tokenNames = ['avg'];
+  let keylog = '';
+  document.onkeydown = function (e) {
+    let keypressed = e.key;
+    keylog += keypressed;
+    for (tokenName of tokenNames) {
+      if (keylog.slice(keylog.length - tokenName.length) === tokenName) {
+        console.log(document.activeElement);
+
+      }
+    }
+  };
 </script>
