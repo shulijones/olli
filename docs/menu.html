@@ -55,10 +55,12 @@ title: "Menu Prototyping"
 </style>
 
 <script>
+  const TOKEN_TYPES = ['viewNumber', 'viewName', 'axisLocation', 'relativeValue', 'min', 'max', 'avg', 'trend'];
+
   /***
    *  Event listeners for the menu
    ***/
-  
+
   document.addEventListener('keydown', (e) => {
     if (e.metaKey && e.key === 'ArrowUp') {
       const thisCheckbox = document.activeElement;
@@ -70,6 +72,8 @@ title: "Menu Prototyping"
         thisDiv.insertAdjacentElement('afterend', previousDiv);
         thisCheckbox.focus();
         thisCheckbox.setAttribute('aria-active', true);
+        thisIdx = TOKEN_TYPES.indexOf(thisCheckbox.id);
+        
       }
     } else if (e.metaKey && e.key === 'ArrowDown') {
       const thisCheckbox = document.activeElement;
@@ -95,6 +99,7 @@ title: "Menu Prototyping"
   /***
    *  Data for the description 
    ***/
+  let lastActiveDescription = null;
 
   const tree = {
     type: "root",
@@ -218,21 +223,37 @@ title: "Menu Prototyping"
   function displayRootDescription() {
     const desc = document.getElementById('description');
     desc.innerHTML = '';
-    displayDescription(tree, desc);
+    displayRecursiveDescription(tree, desc);
   }
 
   // `tree` is the tree to generate a description for
   // `dom` is where to add that description
+  // `id` is so you can track back from DOM to tree
   // `flags` are any description tokens to turn on
-  function displayDescription(tree, dom, flags=[]) {
+  function displayRecursiveDescription(tree, dom, id = '0', flags=[]) {
     const root = document.createElement('li');
     root.setAttribute('tabindex', 0);
+    root.setAttribute('id', id);
+    root.setAttribute('onfocus', 'lastActiveDescription = this');
+
+    displayIndivDescription(tree, root, flags);
+    if (tree.children.length > 0) {
+      const container = document.createElement('ul');
+      for (childIdx in tree.children) {
+        displayRecursiveDescription(tree.children[childIdx], container, id + '-' + childIdx);
+      }
+      root.appendChild(container);
+    }
+    dom.appendChild(root);
+  }
+
+  function displayIndivDescription(node, dom, flags) {
+    let innerText = '';
     const verbosity = parseInt(document.querySelector('input[name="verbosity"]:checked').value);
 
-    let innerText = '';
-    for (token of Object.keys(tree.tokens)) {
+    for (token of Object.keys(node.tokens)) {
       const checkbox = document.getElementById(token);
-      let tokenText = tree.tokens[token];
+      let tokenText = node.tokens[token];
       if (Array.isArray(tokenText)) { 
         tokenText = tokenText[verbosity - 1];  // one-indexed
       }
@@ -245,33 +266,30 @@ title: "Menu Prototyping"
         innerText += tokenText + ' ';
       }
     }
-    root.innerText = innerText;
+    dom.innerText = innerText;
+  }
 
-
-    if (tree.children.length > 0) {
-      const container = document.createElement('ul');
-      container.setAttribute('tabindex', 0);
-      for (child of tree.children) {
-        displayDescription(child, container);
-      }
-      root.appendChild(container);
+  function getTreeNode(id) {
+    const idxs = id.split('-');
+    let node = tree;
+    for (idx of idxs.slice(1)) {
+      node = node.children[idx];
     }
-    dom.appendChild(root);
+    return node;
   }
 
   /***
    *  Event listeners for the description
    ***/
-
-  const tokenNames = ['avg'];
+  const tokenNames = ['avg', 'min', 'max', 'trend'];
   let keylog = '';
   document.onkeydown = function (e) {
     let keypressed = e.key;
     keylog += keypressed;
     for (tokenName of tokenNames) {
       if (keylog.slice(keylog.length - tokenName.length) === tokenName) {
-        console.log(document.activeElement);
-
+        const node = getTreeNode(document.activeElement.id);
+        displayIndivDescription(node, document.activeElement, [tokenName]);
       }
     }
   };
