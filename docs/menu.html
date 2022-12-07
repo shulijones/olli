@@ -5,45 +5,76 @@ title: "Menu Prototyping"
 
 <div>
   <p>
-    This is a prototype for a menu that would control which options appear in a user's Olli
-    tree and what order they appear in. To change the order, use command-up and command-down
-    while focused on the item whose order you want to change.
+    This is a prototype for a settings menu that changes the Olli description text.
+    You can use checkboxes to choose which pieces of text are included and change the verbosity (length)
+    of the included text. You can also reorder the pieces of text by using command-up and command-down.
+    To switch between the menu and the Olli description, use accesskeys m (w, s, and v for submenus) and d.
   </p>
+
+  <fieldset id="menu" tabindex="0" accesskey="m">
+    <legend>Settings Menu</legend>
+
+    <fieldset class="options-set" id="wayfinding" tabindex="0" accesskey="w">
+      <legend>Wayfinding (w)</legend>
+      <div> <input type="checkbox" id="viewNumber"> <label for="viewNumber">View Number ("1 of 5")</label> </div>
+      <div> <input type="checkbox" id="viewName"> <label for="viewName">View Name ("Apple", "Microsoft")</label> </div>
+      <div> <input type="checkbox" id="axisLocation"> <label for="axisLocation">Axis Cell Number ("Grid cell 1 of 5")</label> </div>
+    </fieldset>
+
+    <fieldset class="options-set" id="summarizing" tabindex="0" accesskey="s">
+      <legend>Summarizing (s)</legend>
+      <div> <input type="checkbox" id="min"> <label for="min">Minimum</label> </div>
+      <div> <input type="checkbox" id="max"> <label for="max">Maximum</label> </div>
+      <div> <input type="checkbox" id="avg"> <label for="avg">Average</label> </div>
+      <!-- <div> <input type="checkbox" id="trend"> <label for="trend">Trend</label> </div>
+      <div> 
+        <input type="checkbox" id="relativeValue" onclick="changeAssociatedInputState(this)"> <label for="relativeValue">Relative Value</label> 
+        <input type="number" min='1' max='10' id="relativeValue-input" disabled> <label for="relativeValue-input">Buckets</label>
+      </div> -->
+    </fieldset>
+
+    <fieldset class="options-set" id="verbosity" tabindex="0" accesskey="v">
+      <legend>Verbosity (least to most) (v)</legend>
+      <div> 
+        <input type="radio" id="v1" name="verbosity" value="1">
+        <label for="v1">1</label><br>
+      </div>
+      <div>
+        <input type="radio" id="v2" name="verbosity" value="2">
+        <label for="v2">2</label><br>
+      </div>
+      <div>
+        <input type="radio" id="v3" name="verbosity" value="3" checked>
+        <label for="v3">3</label><br>
+      </div>
+    </fieldset>
+
+    <p>
+      Switch to preset:
+      <select id="switch-preset">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+      <button onclick="loadPreset()">Go</button>
+    </p>
+    <p>
+      Save to preset:
+      <select id="save-preset">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+      <button onclick="savePreset()">Save</button>
+    </p>
+  </fieldset>
 
   <img src="img/multiSeriesLineChart.JPG">
 
   <ul id="description"></ul>
 
-  <div class="options-set">
-    <legend>Token Options</legend>
-    <div> <input type="checkbox" id="viewNumber"> <label for="viewNumber">View Number</label> </div>
-    <div> <input type="checkbox" id="viewName"> <label for="viewName">View Name</label> </div>
-    <div> <input type="checkbox" id="axisLocation"> <label for="axisLocation">Axis Location</label> </div>
-    <div> 
-      <input type="checkbox" id="relativeValue" onclick="changeAssociatedInputState(this)"> <label for="relativeValue">Relative Value</label> 
-      <input type="number" min='1' max='10' id="relativeValue-input" disabled> <label for="relativeValue-input">Buckets</label>
-    </div>
-  </div>
-
-  <div class="options-set">
-    <legend>Axis Options</legend>
-    <div> <input type="checkbox" id="min"> <label for="min">Minimum</label> </div>
-    <div> <input type="checkbox" id="max"> <label for="max">Maximum</label> </div>
-    <div> <input type="checkbox" id="avg"> <label for="avg">Average</label> </div>
-    <div> <input type="checkbox" id="trend"> <label for="trend">Trend</label> </div>
-  </div>
-
-  <div class="options-set">
-    <legend>Verbosity (least to most)</legend>
-    <input type="radio" id="v1" name="verbosity" value="1">
-    <label for="v1">1</label><br>
-    <input type="radio" id="v2" name="verbosity" value="2">
-    <label for="v2">2</label><br>
-    <input type="radio" id="v3" name="verbosity" value="3" checked>
-    <label for="v3">3</label><br>
-  </div>
-
-  <div id="speak" aria-live="assertive" style="display: none;"></div>
+  <p>((aria-live speaking hack))</p>
+  <div id="speak" aria-live="assertive"></div>
 </div>
 
 <style>
@@ -53,6 +84,10 @@ title: "Menu Prototyping"
   
   .options-set {
     margin: 1em;
+  }
+
+  .no-list-style {
+    list-style: none;
   }
 </style>
 
@@ -65,7 +100,7 @@ title: "Menu Prototyping"
     'min', 
     'max', 
     'avg', 
-    'trend',
+    // 'trend',
   ];
 
   /***
@@ -120,7 +155,7 @@ title: "Menu Prototyping"
   }
 
   function speakLastFocused() {
-    srSpeak(document.getElementById(lastActiveDescriptionId).innerText.innerText);
+    srSpeak(document.getElementById(lastActiveDescriptionId).firstChild.innerText);
   }
 
   /***
@@ -135,14 +170,16 @@ title: "Menu Prototyping"
         type: "chart",
         tokens: {
           viewNumber: '1 of 5.',
-          name: 'A line chart titled "MSFT" with axes "date" and "price".'
+          name: ['MSFT line chart: "date", "price".', 'MSFT line chart: "date", "price".', 
+            'A line chart titled "MSFT" with axes "date" and "price".']
         },
         children: [
           {
             type: 'xAxis',
             tokens: {
               name: 'X-axis titled "date"', 
-              values: ' for a temporal scale with values from "Jan 1, 2000" to "Jan 1, 2010".',
+              span: [', "Jan 1, 2000" to "Jan 1, 2010.".', ' with values from "Jan 1, 2000" to "Jan 1, 2010".',
+                ' for a temporal scale with values from "Jan 1, 2000" to "Jan 1, 2010".'],
               viewName: '"MSFT".'
             },
             children: []
@@ -151,11 +188,12 @@ title: "Menu Prototyping"
             type: 'yAxis',
             tokens: {
               name: 'Y-axis titled "price"',
-              values: ' for a quantitative scale with values from "0" to "800".',
-              avg: 'The average value is 25.',
-              min: 'The minimum value is 17.65.',
-              max: 'The maximum value is 39.81.',
-              trend: 'The trend is flat.',
+              span: [', "0" to "800".', 'with values from "0" to "800".',
+                ' for a quantitative scale with values from "0" to "800".'],
+              avg: ['avg 25', 'Average is 25.', 'The average value is 25.'],
+              min: ['min 17.65,', 'Minimum is 17.65.', 'The minimum value is 17.65.'],
+              max: ['max 39.81,', 'Maximum is 39.81.', 'The maximum value is 39.81.'],
+              // trend: 'The trend is flat.',
               viewName: '"MSFT".'
             },
             children: []
@@ -166,7 +204,8 @@ title: "Menu Prototyping"
         type: 'chart',
         tokens: {
           viewNumber: '2 of 5.',
-          name: 'A line chart titled "AMZN" with axes "date" and "price".'
+          name: ['AMZN line chart: "date", "price".', 'AMZN line chart: "date", "price".', 
+          'A line chart titled "AMZN" with axes "date" and "price".']
         },
         children: [
           {
@@ -174,7 +213,8 @@ title: "Menu Prototyping"
             tokens: {
               viewNumber: '2 of 5.',
               name: 'X-axis titled "date"', 
-              span: ' for a temporal scale with values from "Jan 1, 2000" to "Jan 1, 2010".',
+              span: [', "Jan 1, 2000" to "Jan 1, 2010".', ' with values from "Jan 1, 2000" to "Jan 1, 2010".',
+                ' for a temporal scale with values from "Jan 1, 2000" to "Jan 1, 2010".'],
               viewName: '"AMZN".'
             },
             children: [
@@ -230,11 +270,12 @@ title: "Menu Prototyping"
             tokens: {
               viewNumber: '2 of 5.',
               name: 'Y-axis titled "price"',
-              span: 'for a quantitative scale with values from "0" to "800".',
+              span: [', "0" to "800".', 'with values from "0" to "800".',
+                ' for a quantitative scale with values from "0" to "800".'],
               avg: ['avg 48', 'Average is 48.', 'The average value is 48.'],
               min: ['min 5.97,', 'Minimum is 5.97.', 'The minimum value is 5.97.'],
               max: ['max 135.91,', 'Maximum is 135.91.', 'The maximum value is 135.91.'],
-              trend: 'The trend is flat.',
+              // trend: 'The trend is flat.',
               viewName: '"AMZN".'
             },
             children: []
@@ -260,8 +301,13 @@ title: "Menu Prototyping"
     const root = document.createElement('li');
     root.setAttribute('tabindex', 0);
     root.setAttribute('id', id);
-    root.setAttribute('onfocus', 'lastActiveDescriptionId = this.id');
-    root.innerText = getIndivDescription(tree, flags);
+    root.classList.add('no-list-style');
+    // TODO this accesskeyt thing is tricky because our onchange restriction is actually complex
+    root.setAttribute('onfocus', 'lastActiveDescriptionId = this.id; setDescriptionAccesskey(this);');
+
+    text = document.createElement('span');
+    text.innerText = getIndivDescription(tree, flags);
+    root.appendChild(text);
 
     if (tree.children.length > 0) {
       const container = document.createElement('ul');
@@ -275,7 +321,7 @@ title: "Menu Prototyping"
 
   function getIndivDescription(node, flags) {
     const verbosity = parseInt(document.querySelector('input[name="verbosity"]:checked').value);
-    let innerText = '';
+    let text = '';
 
     for (token of Object.keys(node.tokens).sort(tokenSort)) {
       const checkbox = document.getElementById(token);
@@ -286,14 +332,14 @@ title: "Menu Prototyping"
 
       if (checkbox == null || flags.includes(token)) { 
         // if no setting or flag on, always included
-        innerText += tokenText + ' ';
+        text += tokenText + ' ';
       } else if (checkbox.checked) { 
         // if setting exists, only add if checked
-        innerText += tokenText + ' ';
+        text += tokenText + ' ';
       }
     }
 
-    return innerText;
+    return text;
   }
 
   // Put all unlisted tokens first, then order remaining tokens by their order in TOKEN_TYPES
@@ -320,31 +366,142 @@ title: "Menu Prototyping"
     return node;
   }
 
+  // Set a particular part of the description to have an accesskey
+  function setDescriptionAccesskey(elt) {
+    document.querySelectorAll('[accesskey="d"]').forEach(el => el.removeAttribute('accesskey'));
+    elt.setAttribute('accesskey', 'd');
+  }
+
   /***
    *  Event listeners for the description
    ***/
-  const tokenNames = ['avg', 'min', 'max', 'trend'];
-  let keylog = '';
   document.onkeydown = function (e) {
+    keyboardCommands(e);
+    keyboardNavigation(e);
+  };
+
+  let keylog = '';
+  const tokenNames = ['avg', 'min', 'max', 'trend'];
+  function keyboardCommands(e) {
     let keypressed = e.key;
     keylog += keypressed;
     for (tokenName of tokenNames) {
       if (keylog.slice(keylog.length - tokenName.length) === tokenName) {
         const node = getTreeNode(document.activeElement.id);
-        document.activeElement.innerText = getIndivDescription(node, [tokenName]);
-        // TODO speaking was working but now is not?!
-        srSpeak(document.activeElement.innerText);
+        document.activeElement.firstChild.innerText = getIndivDescription(node, [tokenName]);
+        srSpeak(document.activeElement.firstChild.innerText);
       }
     }
-  };
+  }
+
+  function keyboardNavigation(e) {
+    switch (event.key) {
+      case 'ArrowRight':
+        setFocusToNextItem(document.activeElement);
+        break;
+      case 'ArrowLeft':
+        setFocusToPreviousItem(document.activeElement);
+        break;
+      case 'ArrowUp':
+        setFocusToParentItem(document.activeElement);
+        break;
+      case 'ArrowDown':
+        setFocusToNextLayer(document.activeElement);
+        break;
+    }
+  }
+
+  function changeFocus(old, nw) {
+    nw.tabIndex = 0;
+    nw.focus();
+    nw.setAttribute('aria-selected', 'true');
+
+    old.tabIndex = -1;
+    old.setAttribute('aria-selected', 'false');
+  }
+
+  function setFocusToNextItem(currentItem) {
+    const id = currentItem.id;
+    const parentId = id.slice(0, -2);
+    const nextChildId = id.slice(0, -1) + (parseInt(id.slice(-1)) + 1).toString() // add 1 to last num
+    if (document.getElementById(parentId) && document.getElementById(nextChildId)) {
+      changeFocus(currentItem, document.getElementById(nextChildId));
+    }
+  }
+
+  function setFocusToPreviousItem(currentItem) {
+    const id = currentItem.id;
+    const parentId = id.slice(0, -2);
+    const prevChildId = id.slice(0, -1) + (parseInt(id.slice(-1)) - 1).toString() // add 1 to last num
+    if (document.getElementById(parentId) && document.getElementById(prevChildId)) {
+      changeFocus(currentItem, document.getElementById(prevChildId));
+    }
+  }
+
+  function setFocusToNextLayer(currentItem) {
+    const child = document.getElementById(currentItem.id + '-0');
+    if (child) {
+      changeFocus(currentItem, child);
+    }
+  }
+
+  function setFocusToParentItem(currentItem) {
+    const parent = document.getElementById(currentItem.id.slice(0, -2));
+    if (parent) {
+      changeFocus(currentItem, parent);
+    }
+  }
+
+
+  /***
+   *  Presets
+   ***/
+  
+  function fieldsToPreset() {
+    const result = {}
+    for (optionsSet of document.getElementsByClassName('options-set')) {
+      const options = {};
+      for (option of optionsSet.children) {
+        const value = option.firstElementChild;
+        if (value) { // Skips the text/legend nodes
+          options[value.id] = value.checked;
+        }
+      }
+      result[optionsSet.id] = options;
+    }
+    return result;
+  }
+
+  const presets = {1: fieldsToPreset(), 2: fieldsToPreset(), 3: fieldsToPreset()}
+
+  function presetToFields(num) {
+    const preset = presets[num];
+    for (optionsSet of document.getElementsByClassName('options-set')) {
+      for (option of optionsSet.children) {
+        const value = option.firstElementChild;
+        if (value) {
+          value.checked = preset[optionsSet.id][value.id];
+        }
+      }
+    }
+  }
+
+  function loadPreset() {
+    presetToFields(document.getElementById('switch-preset').value);
+  }
+
+  function savePreset() {
+    presets[document.getElementById('save-preset').value] = fieldsToPreset();
+  }
 
   /***
    *  Hack to make screenreader re-read text when it is changed
    ***/
   function srSpeak(text) {
-  window.setTimeout(function () {
-    const el = document.getElementById('speak');
-    el.innerHTML = text;
-  }, 100);
-}
+    console.log(text);
+    window.setTimeout(function () {
+      const el = document.getElementById('speak');
+      el.innerHTML = text;
+    }, 100);
+  }
 </script>
