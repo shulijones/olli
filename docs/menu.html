@@ -14,63 +14,8 @@ title: "Menu Prototyping"
   <fieldset id="menu" tabindex="0" accesskey="m">
     <legend>Settings Menu</legend>
 
-    <!-- <div>
-      <label for=""
-    </div> -->
+    <!-- Control menu is automatically generated -->
 
-    <!-- <fieldset class="options-set" id="wayfinding" tabindex="0" accesskey="w">
-      <legend>Wayfinding (w)</legend>
-      <div> <input type="checkbox" id="viewNumber"> <label for="viewNumber">View Number ("1 of 5")</label> </div>
-      <div> <input type="checkbox" id="viewName"> <label for="viewName">View Name ("Apple", "Microsoft")</label> </div>
-      <div> <input type="checkbox" id="axisLocation"> <label for="axisLocation">Axis Cell Number ("Grid cell 1 of 5")</label> </div>
-    </fieldset> -->
-
-    <!-- <fieldset class="options-set" id="summarizing" tabindex="0" accesskey="s">
-      <legend>Summarizing (s)</legend>
-      <div> <input type="checkbox" id="min"> <label for="min">Minimum</label> </div>
-      <div> <input type="checkbox" id="max"> <label for="max">Maximum</label> </div>
-      <div> <input type="checkbox" id="avg"> <label for="avg">Average</label> </div>
-      <div> <input type="checkbox" id="trend"> <label for="trend">Trend</label> </div>
-      <div> 
-        <input type="checkbox" id="relativeValue" onclick="changeAssociatedInputState(this)"> <label for="relativeValue">Relative Value</label> 
-        <input type="number" min='1' max='10' id="relativeValue-input" disabled> <label for="relativeValue-input">Buckets</label>
-      </div>
-    </fieldset> -->
-
-    <!-- <fieldset class="options-set" id="verbosity" tabindex="0" accesskey="v">
-      <legend>Verbosity (least to most) (v)</legend>
-      <div> 
-        <input type="radio" id="v1" name="verbosity" value="1">
-        <label for="v1">1</label><br>
-      </div>
-      <div>
-        <input type="radio" id="v2" name="verbosity" value="2">
-        <label for="v2">2</label><br>
-      </div>
-      <div>
-        <input type="radio" id="v3" name="verbosity" value="3" checked>
-        <label for="v3">3</label><br>
-      </div> 
-    </fieldset> -->
-
-    <!-- <p>
-      Switch to preset:
-      <select id="switch-preset">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-      </select>
-      <button onclick="loadPreset()">Go</button>
-    </p>
-    <p>
-      Save to preset:
-      <select id="save-preset">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-      </select>
-      <button onclick="savePreset()">Save</button>
-    </p> -->
   </fieldset>
 
   <img src="img/multiSeriesLineChart.JPG">
@@ -144,34 +89,102 @@ title: "Menu Prototyping"
   }
 
   for (let control of Object.keys(controls)) {
-    options = controls[control]['options'];
-    if (!options) {continue;}
+    // create the container when displaying for the first time
+    const container = document.createElement('div');
+    container.id = `${control}-menu`
+    menu.append(container);
 
-    dropdown = document.createElement('select');
-    dropdown.name = control
+    displayControlMenu(control);
+  }
+
+  function displayControlMenu(control) {
+    vMenu = makeVerbosityMenu(control);
+    
+    if (vMenu) {
+      // empty out the container before adding new items
+      const menu = document.getElementById(`${control}-menu`);
+      menu.innerHTML = '';
+
+      menu.append(vMenu);
+      cMenu = makeCustomMenu(control);
+      // TODO appear and disappear onselect of custom option? think about how this will actually
+      // work for screenreader user
+      // cMenu.display = 'none';
+      // cMenu.setAttribute('aria-hidden', 'true');
+      menu.append(cMenu);
+    }
+  }
+
+  function makeVerbosityMenu(control) {
+    const options = controls[control]['options'];
+    if (!options) { return null; }
+
+    const dropdown = document.createElement('select');
+    // dropdown.name = control TODO Why was this here?
     dropdown.id = `${control}-verbosity`
     dropdown.setAttribute('onchange', 'updateInfo(this); displayRootDescription(); speakLastFocused();');
 
-    for (option of Object.keys(options)) {
-      opt = document.createElement('option');
+    for (let option of Object.keys(options)) {
+      let opt = document.createElement('option');
       opt.innerText = option;
       opt.value = option;
       dropdown.appendChild(opt);
     }
 
-    label = document.createElement('label');
+    const label = document.createElement('label');
     label.for = control
     label.innerText = `${control} verbosity:`;
 
-    info = document.createElement('p');
+    const info = document.createElement('p');
     info.innerText = `Description: ${controls[control]['options'][Object.keys(options)[0]].join(', ')}`;
 
-    const menu = document.getElementById('menu');
     const container = document.createElement('div');
     container.appendChild(label);
     container.appendChild(dropdown);
     container.append(info);
-    menu.append(container);
+
+    return container;
+  }
+
+  function makeCustomMenu(control) {
+    const tokens = controls[control]['tokens'];
+    const container = document.createElement('div');
+
+    const checkboxContainer = document.createElement('div');
+    checkboxContainer.id = `${control}-preset-options`;
+
+    for (let token of tokens) {
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.id = `${control}-${token}`;
+
+      const label = document.createElement('label');
+      label.for = `${control}-${token}`;
+      label.innerText = token;
+
+      const div = document.createElement('div');
+      div.appendChild(input);
+      div.appendChild(label);
+      checkboxContainer.append(div);
+    }
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.id = `${control}-preset-name`;
+
+    const nameLabel = document.createElement('label');
+    nameLabel.for = `${control}-preset-name`;
+    nameLabel.innerText = 'Custom preset name';
+
+    const saveButton = document.createElement('button');
+    saveButton.innerText = 'Save';
+    saveButton.setAttribute('onclick', `savePreset('${control}')`);
+
+    container.append(checkboxContainer);
+    container.appendChild(nameLabel);
+    container.appendChild(nameInput);
+    container.appendChild(saveButton);
+    return container;
   }
 
   function updateInfo(dropdown) {
@@ -179,12 +192,26 @@ title: "Menu Prototyping"
     dropdown.nextElementSibling.innerText = `Description: ${controls[control]['options'][dropdown.value].join(', ')}`;
   }
 
+  function savePreset(control) {
+    name = document.getElementById(`${control}-preset-name`).value;
+    tokens = []
+
+    for (tokenOption of document.getElementById(`${control}-preset-options`).children) {
+      if (tokenOption.firstElementChild.checked) {  // checkbox
+        tokens.push(tokenOption.lastElementChild.innerText)  // label name
+      }
+    }
+
+    controls[control]['options'][name] = tokens;
+    displayControlMenu(control);
+  }
+
   /***
    *  Event listeners for the menu
    ***/
   let lastActiveDescriptionId = "0"; // 0 is id of root node
 
-  // TODO refactor
+  // TODO refactoring needed or not?
   // Reordering event listener
   document.addEventListener('keydown', (e) => {
     if (e.metaKey && e.key === 'ArrowUp') {
@@ -534,7 +561,7 @@ title: "Menu Prototyping"
 
 
   /***
-   *  Presets
+   *  Presets TODO maybe all useless now?
    ***/
   
   function fieldsToPreset() {
@@ -570,9 +597,9 @@ title: "Menu Prototyping"
     presetToFields(document.getElementById('switch-preset').value);
   }
 
-  function savePreset() {
-    presets[document.getElementById('save-preset').value] = fieldsToPreset();
-  }
+  // function savePreset() {
+  //   presets[document.getElementById('save-preset').value] = fieldsToPreset();
+  // }
 
   /***
    *  Hack to make screenreader re-read text when it is changed
