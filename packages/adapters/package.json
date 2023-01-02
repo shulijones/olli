@@ -1,6 +1,6 @@
 {
   "name": "olli-adapters",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Visualization toolkit adapters for Olli, a library for converting web visualizations into accessible text structures for blind and low-vision screen reader users.",
   "main": "./dist/adapters.js",
   "types": "./dist/index.d.ts",

@@ -15,10 +15,11 @@ type ObservablePlotSpec = any;
  */
 export const ObservablePlotAdapter: VisAdapter<ObservablePlotSpec> = async (plotObject: ObservablePlotSpec): Promise<OlliVisSpec> => {
     const plotSVG = await Plot.plot(plotObject)
+    const description = plotObject.ariaDescription;
     if (hasFacets(plotObject) || isMultiSeries(plotObject)) {
-        return plotToFacetedChart(plotObject, plotSVG);
+        return {description, ...plotToFacetedChart(plotObject, plotSVG)};
     } else {
-        return plotToChart(plotObject, plotSVG);
+        return {description, ...plotToChart(plotObject, plotSVG)};
     }
 }
 

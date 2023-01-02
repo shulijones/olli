@@ -1,6 +1,6 @@
 import { Spec, ScaleDataRef, Scale, ScaleData, Scene, SceneItem, isString, SignalRef, ScaleMultiFieldsRef } from "vega";
 import { OlliVisSpec, VisAdapter, chart, Chart, Axis, Legend, facetedChart, FacetedChart, OlliMark, OlliDataset } from "olli";
-import { filterUniqueNodes, findScenegraphNodes, getData, getVegaScene, guideTypeFromScale, isNumeric, SceneGroup } from "./utils";
+import { filterUniqueObjects, findScenegraphNodes, getData, getVegaScene, guideTypeFromScale, isNumeric, SceneGroup } from "./utils";
 
 /**
 * Adapter function that breaks down a Vega visualization into it's basic visual grammar
@@ -8,19 +8,20 @@ import { filterUniqueNodes, findScenegraphNodes, getData, getVegaScene, guideTyp
 * @returns the {@link OlliVisSpec}, the non-concrete visualization information that can be later used to
 * generate the Accessibility Tree Encoding
 */
-export const VegaAdapter: VisAdapter<Spec> = async (vSpec: Spec): Promise<OlliVisSpec> => {
-    const scene = await getVegaScene(vSpec);
+export const VegaAdapter: VisAdapter<Spec> = async (spec: Spec): Promise<OlliVisSpec> => {
+    const scene: SceneGroup = await getVegaScene(spec);
     const data = getData(scene);
+    const description = spec.description; // possible text description included with spec
     if (scene.items.some((el: any) => el.role === "scope")) {
-        return parseFacets(vSpec, scene, data);
+        return {description, ...parseFacets(spec, scene, data)};
     } else {
-        return parseSingleChart(vSpec, scene, data);
+        return {description, ...parseSingleChart(spec, scene, data)};
     }
 }
 
 function parseFacets(spec: Spec, scene: SceneGroup, data: OlliDataset): FacetedChart {
-    const axes = filterUniqueNodes(findScenegraphNodes(scene, "axis").map((axisNode: any) => parseAxisInformation(spec, axisNode)));
-    const legends = filterUniqueNodes(findScenegraphNodes(scene, "legend").map((legendNode: any) => parseLegendInformation(spec, legendNode, data)));
+    const axes = filterUniqueObjects<Axis>(findScenegraphNodes(scene, "axis").map((axisNode: any) => parseAxisInformation(spec, axisNode, data)));
+    const legends = filterUniqueObjects<Legend>(findScenegraphNodes(scene, "legend").map((legendNode: any) => parseLegendInformation(spec, legendNode, data)));
     const chartItems = scene.items.filter((el: any) => el.role === "scope")[0].items;
     let facetField: string
     const facetMarkSpec = spec.marks?.find((m: any, i: number) => m.from && m.from.facet)! as any;
@@ -57,7 +58,7 @@ function parseFacets(spec: Spec, scene: SceneGroup, data: OlliDataset): FacetedC
 }
 
 function parseSingleChart(spec: Spec, scene: Scene | SceneItem, data: OlliDataset): Chart {
-    const axes = findScenegraphNodes(scene, "axis").map((axisNode: any) => parseAxisInformation(spec, axisNode));
+    const axes = findScenegraphNodes(scene, "axis").map((axisNode: any) => parseAxisInformation(spec, axisNode, data));
     const legends = findScenegraphNodes(scene, "legend").map((legendNode: any) => parseLegendInformation(spec, legendNode, data))
     const chartTitle: string | undefined = findScenegraphNodes(scene, "title").length > 0 ?
         findScenegraphNodes(scene, "title")[0].items[0].items[0].items[0].text
@@ -89,7 +90,7 @@ function vegaMarkToOlliMark(mark?: string): OlliMark | undefined {
 /**
  * @returns a key-value pairing of the axis orientation and the {@link Guide} of the corresponding axis
  */
-function parseAxisInformation(spec: Spec, axis: any): Axis {
+function parseAxisInformation(spec: Spec, axis: any, data: OlliDataset): Axis {
     const axisView = axis.items[0]
     const ticks: any[] = axisView.items.find((n: any) => n.role === 'axis-tick').items.map((n: any) => n.datum.value);
     const title: string = axisView.items.find((n: any) => n.role === "axis-title")?.items?.[0]?.text;
@@ -128,18 +129,26 @@ function parseAxisInformation(spec: Spec, axis: any): Axis {
     }
     //
 
-    const type = scaleSpec?.type ? guideTypeFromScale(scaleSpec.type) : (
+    const scaleType = scaleSpec?.type;
+    const type = scaleType ? guideTypeFromScale(scaleType) : (
         ticks.every((t: string | number) => !isString(t) || (isString(t) && isNumeric(t))) ? 'continuous' : 'discrete'
     );
 
     const axisType = axisView.orient === "bottom" || axisView.orient === "top" ? "x" : "y";
+
+    // convert temporal values into date objects
+    if (scaleType === 'time') {
+        data.forEach(datum => {
+            datum[field] = new Date(datum[field]);
+        });
+    }
 
     return {
         type,
         values: ticks,
         title: title,
         field: field,
-        scaleType: scaleSpec?.type,
+        scaleType,
         axisType: axisType
     }
 }

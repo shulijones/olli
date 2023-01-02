@@ -17,7 +17,8 @@
  type BaseOlliVisSpec = {
      type: "chart" | "facetedChart",
      data: OlliDataset,
-     title? : string
+     title?: string,
+     description?: string // possible chart description included with the spec
  }
 
  /**

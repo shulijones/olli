@@ -1,44 +1,45 @@
+import { OlliDatum } from "../Types";
+
 /**
  * Meta-data information to what kind of node is currently visited
  */
 export type NodeType = "chart" | "xAxis" | "yAxis" | "data" | "filteredData" | "legend" | "grid" | "multiView";
 
+
+export type EncodingFilterValue = string | [number | Date, number | Date];
+export type GridFilterValue = [EncodingFilterValue, EncodingFilterValue];
+export type FilterValue = EncodingFilterValue | GridFilterValue;
+
 /**
- * A {@link BaseAccessibilityTreeNode} is a tree representation of a visualization and its data starting from
- * a high-level overview of the visualization to structured elements (ex: axes and legends) to eventually specific data points.
- *
- * description: A verbose description of the node used when rendering
- *
- * parent: The parent node of the tree, null if this node is the root
- *
- * children: The children tree nodes that this element has
- *
- * selected: The array of data points that are contained in this node and all children nodes
- *
+ * A {@link AccessibilityTreeNode} represents an location in an accessible structure.
  * type: The {@link NodeType} of this element
- *
- * fieldsUsed: The data fields used (assists with rendering data tables)
+ * parent: The node's parent {@link AccessibilityTreeNode}
+ * selected: The filtered data that is selected at this location in the tree
+ * description: The text description of this node that is rendered to the user
+ * children: The list of child {@link AccessibilityTreeNode}s of this element
+ * tableKeys: a list of fields that should be included as columns in any tabular representation of this node
+ * gridIndex: if this node represents a cell in a grid view, the row/column coordinates of the cell *
  */
 export type AccessibilityTreeNode = {
     type: NodeType,
     parent: AccessibilityTreeNode | null,
-    selected: any[],
+    selected: OlliDatum[],
     description: string,
     children: AccessibilityTreeNode[]
     tableKeys?: string[],
+    filterValue?: FilterValue,
     gridIndex?: {
       i: number,
       j: number
-    }
+    },
 }
 
+/**
+ * A {@link AccessibilityTree} is a tree representation of a visualization.
+ * root: The root {@link AccessibilityTreeNode} of the tree
+ * fieldsUsed: The data fields that are used by encodings (assists with rendering data tables)
+ */
 export type AccessibilityTree = {
     root: AccessibilityTreeNode,
     fieldsUsed: string[]
 }
-
-/*
-TODO:
-  - Expand type system to include more meta-data that can be accessed and allow each node to be easily expanded upon
-  - Possibly create different types for different nodes that can specifically be accessed in functions to get more information
-*/

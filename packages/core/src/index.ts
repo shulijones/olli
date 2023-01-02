@@ -10,7 +10,7 @@ export * from './Types';
 /**
  * The configuration object outlining how an accessible visualization should be rendered based on a {@link OlliVisSpec}.
  */
-type OlliConfigOptions = {
+export type OlliConfigOptions = {
     renderType?: 'tree' | 'table'
 }
 

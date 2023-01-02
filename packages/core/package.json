@@ -1,6 +1,6 @@
 {
   "name": "olli",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Olli is a library for converting web visualizations into accessible text structures for blind and low-vision screen reader users.",
   "main": "./dist/olli.js",
   "types": "./dist/index.d.ts",
@@ -30,6 +30,7 @@
   "devDependencies": {
     "css-loader": "^6.7.1",
     "style-loader": "^3.3.1",
+    "ts-loader": "^9.4.2",
     "webpack-merge": "^5.8.0"
   }
 }

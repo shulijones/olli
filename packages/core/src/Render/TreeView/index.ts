@@ -101,7 +101,7 @@ import "./TreeStyle.css";
 
     dataNodes.forEach((node) => {
       const dataRow = document.createElement("tr")
-      dataRow.setAttribute('aria-label', `${node.tableKeys?.map(key => `${key}: ${node.selected[0][key]}`).join(', ')}`);
+      dataRow.setAttribute('aria-label', `${node.tableKeys?.map(key => `${key}: ${fmtValue(node.selected[0][key])}`).join(', ')}`);
       node.tableKeys?.forEach((key: string) => {
         const td = document.createElement("td")
         const value = fmtValue(node.selected[0][key]);
