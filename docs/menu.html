@@ -97,10 +97,6 @@ title: "Menu Prototyping"
     container.id = `${control}-menu`
     document.getElementById('settings').append(container);
 
-    displayControlMenu(control);
-  }
-
-  function displayControlMenu(control) {
     vMenu = makeVerbosityMenu(control);
     
     if (vMenu) {
@@ -109,12 +105,16 @@ title: "Menu Prototyping"
       menu.innerHTML = '';
       menu.append(vMenu);
 
-      // TODO we don't really need to remake this every time, unlike the vmenu
       cMenu = makeCustomMenu(control);
       cMenu.setAttribute('style', 'display: none');
       cMenu.setAttribute('aria-hidden', 'true');
       menu.append(cMenu);
     }
+  }
+
+  function updateVerbosityDropdown(control) {
+    oldMenu = document.getElementById(`${control}-verbosity-container`);
+    oldMenu.replaceWith(makeVerbosityMenu(control));
   }
 
   function makeVerbosityMenu(control) {
@@ -146,7 +146,7 @@ title: "Menu Prototyping"
     info.innerText = `Description: ${controls[control]['options'][Object.keys(options)[0]].join(', ')}`;
 
     const container = document.createElement('div');
-    // container.tabindex=0
+    container.id = `${control}-verbosity-container`;
     container.appendChild(label);
     container.appendChild(dropdown);
     container.append(info);
@@ -229,7 +229,7 @@ title: "Menu Prototyping"
     }
 
     controls[control]['options'][name] = tokens;
-    displayControlMenu(control);
+    updateVerbosityDropdown(control);
     document.getElementById(`${control}-verbosity`).value = name;
     updateDescription(document.getElementById(`${control}-verbosity`));
   }
@@ -239,7 +239,6 @@ title: "Menu Prototyping"
    ***/
   let lastActiveDescriptionId = "0"; // 0 is id of root node
 
-  // TODO refactoring needed or not?
   // Reordering event listener
   document.addEventListener('keydown', (e) => {
     if (e.metaKey && e.key === 'ArrowUp') {
@@ -253,12 +252,6 @@ title: "Menu Prototyping"
         thisDiv.insertAdjacentElement('afterend', previousDiv);
         thisCheckbox.focus();
         thisCheckbox.setAttribute('aria-active', true);
-
-        // Change token ordering and refresh description
-        thisIdx = TOKEN_TYPES.indexOf(thisCheckbox.id);
-        [TOKEN_TYPES[thisIdx], TOKEN_TYPES[thisIdx - 1]] = [TOKEN_TYPES[thisIdx - 1], TOKEN_TYPES[thisIdx]];
-        displayRootDescription();   
-        speakLastFocused();
       }
     } else if (e.metaKey && e.key === 'ArrowDown') {
       const thisCheckbox = document.activeElement;
@@ -266,24 +259,12 @@ title: "Menu Prototyping"
       const nextDiv = thisDiv.nextElementSibling;
       if (nextDiv != null) {
         thisDiv.parentNode.insertBefore(nextDiv, thisDiv);
-
-        thisIdx = TOKEN_TYPES.indexOf(thisCheckbox.id);
-        [TOKEN_TYPES[thisIdx], TOKEN_TYPES[thisIdx + 1]] = [TOKEN_TYPES[thisIdx + 1], TOKEN_TYPES[thisIdx]];
-        displayRootDescription(); 
-        speakLastFocused();  
       }
     }
   })
 
   function changeAssociatedInputState(input) {
     document.getElementById(`${input.id}-input`).disabled = !input.checked;
-  }
-
-  const optionSets = document.getElementsByClassName("options-set");
-  for (optionSet of optionSets) {
-    for (option of optionSet.children) {
-      option.setAttribute('onchange', 'displayRootDescription(); speakLastFocused();');
-    }
   }
 
   function speakLastFocused() {
@@ -490,8 +471,6 @@ title: "Menu Prototyping"
     return text;
   }
 
-  
-
   function getTreeNode(id) {
     const idxs = id.split('-');
     let node = tree;
@@ -515,6 +494,7 @@ title: "Menu Prototyping"
     keyboardNavigation(e);
   };
 
+  // TODO needs updating
   let keylog = '';
   const tokenNames = ['avg', 'min', 'max', 'trend'];
   function keyboardCommands(e) {
@@ -586,48 +566,6 @@ title: "Menu Prototyping"
       changeFocus(currentItem, parent);
     }
   }
-
-
-  /***
-   *  Presets TODO maybe all useless now?
-   ***/
-  
-  function fieldsToPreset() {
-    const result = {}
-    for (optionsSet of document.getElementsByClassName('options-set')) {
-      const options = {};
-      for (option of optionsSet.children) {
-        const value = option.firstElementChild;
-        if (value) { // Skips the text/legend nodes
-          options[value.id] = value.checked;
-        }
-      }
-      result[optionsSet.id] = options;
-    }
-    return result;
-  }
-
-  const presets = {1: fieldsToPreset(), 2: fieldsToPreset(), 3: fieldsToPreset()}
-
-  function presetToFields(num) {
-    const preset = presets[num];
-    for (optionsSet of document.getElementsByClassName('options-set')) {
-      for (option of optionsSet.children) {
-        const value = option.firstElementChild;
-        if (value) {
-          value.checked = preset[optionsSet.id][value.id];
-        }
-      }
-    }
-  }
-
-  function loadPreset() {
-    presetToFields(document.getElementById('switch-preset').value);
-  }
-
-  // function savePreset() {
-  //   presets[document.getElementById('save-preset').value] = fieldsToPreset();
-  // }
 
   /***
    *  Helper functions
