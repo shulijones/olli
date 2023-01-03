@@ -5,13 +5,15 @@ title: "Menu Prototyping"
 
 <div>
   <p>
-    This is a prototype for a settings menu that changes the Olli description text.
-    You can use checkboxes to choose which pieces of text are included and change the verbosity (length)
-    of the included text. You can also reorder the pieces of text by using command-up and command-down.
-    To switch between the menu and the Olli description, use accesskeys m (w, s, and v for submenus) and d.
+    This is a prototype for a settings menu that changes the Olli description text. For each of the four
+    levels of the graph, you can choose which pieces of information will be included. 'High' and 'low'
+    verbosity provide two basic options; you can also use the 'custom' setting to make your own preset. 
+    Within the custom menu, you can select individual items as well as reorder them using command-up and 
+    command-down.
+    TODO To switch between the menu and the Olli description, use accesskeys m (w, s, and v for submenus) and d.
   </p>
 
-  <fieldset id="menu" tabindex="0" accesskey="m">
+  <fieldset id="settings" tabindex="0" accesskey="m">
     <legend>Settings Menu</legend>
 
     <!-- Control menu is automatically generated -->
@@ -31,13 +33,14 @@ title: "Menu Prototyping"
     width: 3em;
   } 
   
-  .options-set {
-    margin: 1em;
+  #settings select, input[type=text] {
+    margin: 5px;
   }
 
   .no-list-style {
     list-style: none;
   }
+
 </style>
 
 <script>
@@ -92,7 +95,7 @@ title: "Menu Prototyping"
     // create the container when displaying for the first time
     const container = document.createElement('div');
     container.id = `${control}-menu`
-    menu.append(container);
+    document.getElementById('settings').append(container);
 
     displayControlMenu(control);
   }
@@ -104,13 +107,12 @@ title: "Menu Prototyping"
       // empty out the container before adding new items
       const menu = document.getElementById(`${control}-menu`);
       menu.innerHTML = '';
-
       menu.append(vMenu);
+
+      // TODO we don't really need to remake this every time, unlike the vmenu
       cMenu = makeCustomMenu(control);
-      // TODO appear and disappear onselect of custom option? think about how this will actually
-      // work for screenreader user
-      // cMenu.display = 'none';
-      // cMenu.setAttribute('aria-hidden', 'true');
+      cMenu.setAttribute('style', 'display: none');
+      cMenu.setAttribute('aria-hidden', 'true');
       menu.append(cMenu);
     }
   }
@@ -122,7 +124,7 @@ title: "Menu Prototyping"
     const dropdown = document.createElement('select');
     // dropdown.name = control TODO Why was this here?
     dropdown.id = `${control}-verbosity`
-    dropdown.setAttribute('onchange', 'updateInfo(this); displayRootDescription(); speakLastFocused();');
+    dropdown.setAttribute('onchange', 'updateDescription(this)');
 
     for (let option of Object.keys(options)) {
       let opt = document.createElement('option');
@@ -130,15 +132,21 @@ title: "Menu Prototyping"
       opt.value = option;
       dropdown.appendChild(opt);
     }
+    custom = document.createElement('option');
+    custom.innerText = 'custom';
+    custom.value = 'custom';
+    dropdown.appendChild(custom)
 
     const label = document.createElement('label');
-    label.for = control
-    label.innerText = `${control} verbosity:`;
+    label.setAttribute('for', `${control}-verbosity`);
+    label.innerText = titleCase(`${control} verbosity:`);
 
-    const info = document.createElement('p');
+    const info = document.createElement('span');
+    info.setAttribute('tabindex', '0')
     info.innerText = `Description: ${controls[control]['options'][Object.keys(options)[0]].join(', ')}`;
 
     const container = document.createElement('div');
+    // container.tabindex=0
     container.appendChild(label);
     container.appendChild(dropdown);
     container.append(info);
@@ -149,6 +157,7 @@ title: "Menu Prototyping"
   function makeCustomMenu(control) {
     const tokens = controls[control]['tokens'];
     const container = document.createElement('div');
+    container.id = `${control}-preset`;
 
     const checkboxContainer = document.createElement('div');
     checkboxContainer.id = `${control}-preset-options`;
@@ -159,7 +168,7 @@ title: "Menu Prototyping"
       input.id = `${control}-${token}`;
 
       const label = document.createElement('label');
-      label.for = `${control}-${token}`;
+      label.setAttribute('for', `${control}-${token}`);
       label.innerText = token;
 
       const div = document.createElement('div');
@@ -173,7 +182,7 @@ title: "Menu Prototyping"
     nameInput.id = `${control}-preset-name`;
 
     const nameLabel = document.createElement('label');
-    nameLabel.for = `${control}-preset-name`;
+    nameLabel.setAttribute('for', `${control}-preset-name`);
     nameLabel.innerText = 'Custom preset name';
 
     const saveButton = document.createElement('button');
@@ -187,12 +196,29 @@ title: "Menu Prototyping"
     return container;
   }
 
-  function updateInfo(dropdown) {
-    control = dropdown.id.split('-')[0]
-    dropdown.nextElementSibling.innerText = `Description: ${controls[control]['options'][dropdown.value].join(', ')}`;
+  function updateDescription(dropdown) {
+    control = dropdown.id.split('-')[0];
+
+    if (dropdown.value === 'custom') {
+      // Open the customization mennu
+      customMenu = document.getElementById(`${control}-preset`);
+      customMenu.setAttribute('style', 'display: block');
+      customMenu.setAttribute('aria-hidden', 'false');
+      dropdown.nextElementSibling.innerText = "Create a custom preset using the preset menu (next element)."
+    } else {
+      // Update the current description based on the new setting
+      dropdown.nextElementSibling.innerText =
+        `Description: ${controls[control]['options'][dropdown.value].join(', ')}`;
+      displayRootDescription();
+      speakLastFocused();
+    }
   }
 
   function savePreset(control) {
+    customMenu = document.getElementById(`${control}-preset`);
+    customMenu.setAttribute('style', 'display: none');
+    customMenu.setAttribute('aria-hidden', 'true');
+    
     name = document.getElementById(`${control}-preset-name`).value;
     tokens = []
 
@@ -204,6 +230,8 @@ title: "Menu Prototyping"
 
     controls[control]['options'][name] = tokens;
     displayControlMenu(control);
+    document.getElementById(`${control}-verbosity`).value = name;
+    updateDescription(document.getElementById(`${control}-verbosity`));
   }
 
   /***
@@ -602,13 +630,19 @@ title: "Menu Prototyping"
   // }
 
   /***
-   *  Hack to make screenreader re-read text when it is changed
+   *  Helper functions
    ***/
+
+  // Hack to make screenreader re-read text when it is changed
   function srSpeak(text) {
     console.log(text);
     window.setTimeout(function () {
       const el = document.getElementById('speak');
       el.innerHTML = text;
     }, 100);
+  }
+
+  function titleCase(text) {
+    return text.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   }
 </script>
