@@ -4,12 +4,16 @@ title: "Menu Prototyping"
 ---
 
 <div>
-  <p>
+  <p tabindex="0">
     This is a prototype for a settings menu that changes the Olli description text. For each of the four
     levels of the graph, you can choose which pieces of information will be included. 'High' and 'low'
     verbosity provide two basic options; you can also use the 'custom' setting to make your own preset. 
     Within the custom menu, you can select individual items as well as reorder them using command-up and 
-    command-down. To switch between the menu and the Olli description, use accesskeys m and d.
+    command-down. To switch between the menu and the Olli description, use accesskeys m and d or ctrl-m and ctrl-d.
+
+    To switch each of the four verbosity levels between high and low, you can simply type f low or f high, using f for facet,
+    a for axis, s for section, and d for datapoint. While in the description, you can also type the name of any individual token
+    (e.g. 'index' or 'type') to have it added to the part of the description you're currently in.
   </p>
 
   <fieldset id="settings" tabindex="0" accesskey="s">
@@ -354,7 +358,7 @@ const tree = {
     ]
   }
 
-  const descriptionAccesskey = "o";
+  const descriptionAccesskey = "d";
   displayRootDescription();
 
 
@@ -408,20 +412,21 @@ const tree = {
 
   function getIndivDescription(node, flags) {
     const verbosity = document.getElementById(`${node.type}-verbosity`);
+    if (!flags) { flags = [] }
     if (verbosity) {
-      tokenInclude = controls[node.type]['options'][verbosity.value]
+      verbSettings = controls[node.type]['options'][verbosity.value]
+      tokenInclude = [...new Set([...verbSettings, ...flags])] // set union of the two arrays
     } else {
       tokenInclude = TOKEN_TYPES
     }
     let text = '';
 
-    console.log(node.type)
     if (node.type !== 'datapoint') {
       for (token of (Object.keys(node.tokens)).sort(tokenSort(tokenInclude))) { // TODO
         const checkbox = document.getElementById(token);
         let tokenText = node.tokens[token];
 
-        if (tokenInclude.includes(token) || flags.includes(token)) { 
+        if (tokenInclude.includes(token)) { 
           text += tokenText + ' ';
         }
       }
@@ -458,8 +463,6 @@ const tree = {
   }
 
   function refactorDatapoints(tokens, include) {
-    console.log(tokens)
-    console.log(include)
     data = []
     for (let i = 0; i < tokens['data'].length; i++) {
       datapoint = {}
@@ -518,20 +521,46 @@ const tree = {
     keyboardNavigation(e);
   };
 
-  // TODO needs updating
   let keylog = '';
-  const tokenNames = ['avg', 'min', 'max', 'trend'];
+  const dropdownNames = ['flow', 'fhigh', 'alow', 'ahigh', 'slow', 'shigh', 'dlow', 'dhigh']
   function keyboardCommands(e) {
     let keypressed = e.key;
+
+    if (e.ctrlKey && keypressed === 'm') {
+      document.getElementById('settings').focus()
+    } else if (e.ctrlKey && keypressed === 'd') {
+      document.getElementById(lastActiveDescriptionId).focus()
+    }
+
     keylog += keypressed;
-    for (tokenName of tokenNames) {
+    for (dropdownName of dropdownNames) {
+      if (keylog.slice(keylog.length - dropdownName.length) === dropdownName) {
+        const curFocus = document.activeElement.id
+        const value = dropdownName.slice(1)
+        const mapping = {'f': 'facet-verbosity', 'a': 'axis-verbosity', 's': 'section-verbosity', 'd': 'datapoint-verbosity'}
+        id = mapping[dropdownName.slice(0, 1)]
+
+        document.getElementById(id).value = value
+        updateDescription(document.getElementById(id));
+
+        document.getElementById(curFocus).focus()
+        document.getElementById(curFocus).setAttribute('aria-active', true);
+      }
+    }
+    for (tokenName of TOKEN_TYPES) {
       if (keylog.slice(keylog.length - tokenName.length) === tokenName) {
         const node = getTreeNode(document.activeElement.id);
-        document.activeElement.firstChild.innerText = getIndivDescription(node, [tokenName]);
+        console.log(document.activeElement.firstChild);
+        document.activeElement.firstChild.replaceWith(getIndivDescription(node, [tokenName]));
         srSpeak(document.activeElement.firstChild.innerText);
       }
     }
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey && e.key === 'ArrowUp') {
+    }
+  })
 
   function keyboardNavigation(e) {
     switch (event.key) {
