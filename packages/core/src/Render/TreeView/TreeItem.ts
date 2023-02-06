@@ -188,6 +188,8 @@ export class TreeItem {
 
     checkBaseKeys(event: KeyboardEvent) {
         let flag = false;
+        const typingToken = this.tree.currentlyTypingToken();
+        if (typingToken) {console.log("typing token (keylog)", this.tree.keylog.slice(-5))}
         switch (event.key) {
             case 'Enter':
             case ' ':
@@ -245,25 +247,25 @@ export class TreeItem {
                 }
                 break;
             case 'x':
-                this.tree.focusOnNodeType("xAxis", this);
+                if (!typingToken) { this.tree.focusOnNodeType("xAxis", this); }
                 break;
             case 'y':
-                this.tree.focusOnNodeType("yAxis", this);
+                if (!typingToken) { this.tree.focusOnNodeType("yAxis", this); }
                 break;
             case 'l':
-                this.tree.focusOnNodeType("legend", this);
+                if (!typingToken) { this.tree.focusOnNodeType("legend", this); }
                 break;
             case 'w':
-                this.tree.setFocusGridUp(this);
+                if (!typingToken) { this.tree.setFocusGridUp(this); }
                 break;
             case 'a':
-                this.tree.setFocusGridLeft(this);
+                if (!typingToken) { this.tree.setFocusGridLeft(this); }
                 break;
             case 's':
-                this.tree.setFocusGridDown(this);
+                if (!typingToken) { this.tree.setFocusGridDown(this); }
                 break;
             case 'd':
-                this.tree.setFocusGridRight(this);
+                if (!typingToken) { this.tree.setFocusGridRight(this); }
                 break;
         }
 
@@ -272,7 +274,7 @@ export class TreeItem {
             event.preventDefault();
         }
     }
-
+    
     handleClick(event: MouseEvent) {
         if (this.isExpandable) {
             if (this.isExpanded()) {

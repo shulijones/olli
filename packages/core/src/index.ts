@@ -4,6 +4,8 @@ import { Tree } from "./Render/TreeView/Tree"
 import { renderTree } from "./Render/TreeView"
 import { olliVisSpecToTree } from "./Structure"
 import { AccessibilityTree } from "./Structure/Types"
+import { renderMenu } from "./Settings"
+import { addMenuCommands, addTreeCommands } from "./Settings/commands"
 
 export * from './Types';
 
@@ -22,7 +24,7 @@ export function olli(olliVisSpec: OlliVisSpec, config?: OlliConfigOptions): HTML
     const tree: AccessibilityTree = olliVisSpecToTree(olliVisSpec);
 
     const htmlRendering: HTMLElement = document.createElement("div");
-    htmlRendering.classList.add('olli-vis');
+    // htmlRendering.classList.add('olli-vis');
 
     config = {
         renderType: config?.renderType || 'tree'
@@ -34,15 +36,24 @@ export function olli(olliVisSpec: OlliVisSpec, config?: OlliConfigOptions): HTML
             break;
         case ('tree'):
         default:
+            const menu = renderMenu(tree);
+            htmlRendering.appendChild(menu);
+
             const ul = renderTree(tree);
-            htmlRendering.appendChild(ul);
+            const container = document.createElement('div');
+            container.classList.add('olli-vis'); // TODO sort out exactly what's happening here
+            container.appendChild(ul)
+            htmlRendering.appendChild(container);
             const t = new Tree(ul);
             t.init();
             document.addEventListener('keypress', (e) => {
-                if (e.key === 't') {
+                if (e.key === 't' && !t.currentlyTypingToken()) {
                     t.setFocusToItem(t.rootTreeItem);
                 }
             })
+
+            addMenuCommands(menu, t);
+            addTreeCommands(ul, tree, t);
             break;
     }
 
