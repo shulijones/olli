@@ -34,10 +34,21 @@ export const VegaLiteAdapter: VisAdapter<TopLevelSpec> = async (spec: TopLevelSp
  * @param spec The Vega-Lite Spec that rendered the visualization
  * @returns An {@link OlliVisSpec} of the deconstructed Vega-Lite visualization
  */
-function parseMultiView(spec: any, scene: SceneGroup, data: OlliDataset): OlliVisSpec {
+function parseMultiView(spec: TopLevelSpec, scene: SceneGroup, data: OlliDataset): OlliVisSpec {
     const axes = filterUniqueObjects<Axis>(findScenegraphNodes(scene, "axis").map((axis: any) => parseAxis(axis, spec, data)));
     const legends = filterUniqueObjects<Legend>(findScenegraphNodes(scene, "legend").map((legend: any) => parseLegend(legend, spec)));
-    let facetedField = spec.encoding.facet !== undefined ? spec.encoding.facet.field : spec.encoding['color'].field
+    const getFacetedField = (spec: any) => {
+        if (spec.encoding?.facet?.field) {
+            return spec.encoding?.facet?.field;
+        }
+        if (spec.encoding?.color?.field) {
+            return spec.encoding?.color?.field;
+        }
+        if (spec.encoding?.color?.condition?.field) {
+            return spec.encoding?.color?.condition?.field;
+        }
+    }
+    const facetedField = getFacetedField(spec);
     let nestedHeirarchies: Map<any, Chart> = new Map(scene.items.filter((el: any) => el.role === "scope")[0].items
         .map((chart: any) => {
             const chartData = parseChart(spec, chart, data)
@@ -50,7 +61,7 @@ function parseMultiView(spec: any, scene: SceneGroup, data: OlliDataset): OlliVi
     let node = facetedChart({
         data,
         charts: nestedHeirarchies,
-        facetedField: facetedField
+        facetedField
     })
 
     return node;
