@@ -174,9 +174,9 @@ function savePreset(hierarchyLevel: Exclude<HierarchyLevel, 'root'>, tree: Acces
   const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: TokenType[]}} = JSON.parse(localStorage.getItem('settingsData')!);
   const presetName = (document.getElementById(`${hierarchyLevel}-custom-name`)! as HTMLInputElement).value;
   settingsData[hierarchyLevel][presetName] = getCurrentlyChecked(hierarchyLevel);
-  updateVerbosityDropdown(hierarchyLevel);
   localStorage.setItem('settingsData', JSON.stringify(settingsData));
-
+  updateVerbosityDropdown(hierarchyLevel);
+  
   // Set the dropdown to this preset and update the description accordingly 
   // (acting as though user had selected their new preset from the dropdown menu)
   const dropdown = document.getElementById(`${hierarchyLevel}-verbosity`)! as HTMLSelectElement;
@@ -185,22 +185,22 @@ function savePreset(hierarchyLevel: Exclude<HierarchyLevel, 'root'>, tree: Acces
   dropdown.focus();
   dropdown.setAttribute('aria-active', 'true');
 
-  function getCurrentlyChecked(hierarchyLevel: string) {
-    const tokens: TokenType[] = []
-    for (let tokenOption of document.getElementById(`${hierarchyLevel}-custom-options`)!.children) {
-      const checkbox = tokenOption!.firstElementChild! as HTMLInputElement;
-      if (checkbox.checked) {
-        tokens.push(checkbox.id.split('-')[1] as TokenType);
-      }
-    }
-    return tokens;
-  }
-
   function updateVerbosityDropdown(hierarchyLevel: string) {
     const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: TokenType[]}} = JSON.parse(localStorage.getItem('settingsData')!);
     const oldMenu = document.getElementById(`${hierarchyLevel}-verbosity-container`);
     oldMenu!.replaceWith(makeIndivVerbosityMenu(hierarchyLevel as Exclude<HierarchyLevel, 'root'>, tree));
   }
+}
+
+export function getCurrentlyChecked(hierarchyLevel: string) {
+  const tokens: TokenType[] = []
+  for (let tokenOption of document.getElementById(`${hierarchyLevel}-custom-options`)!.children) {
+    const checkbox = tokenOption!.firstElementChild! as HTMLInputElement;
+    if (checkbox.checked) {
+      tokens.push(checkbox.id.split('-')[1] as TokenType);
+    }
+  }
+  return tokens;
 }
 
 /**
@@ -212,25 +212,25 @@ function savePreset(hierarchyLevel: Exclude<HierarchyLevel, 'root'>, tree: Acces
  */
 export function getDescriptionWithSettings(node: AccessibilityTreeNode): string {
   const hierarchyLevel = nodeTypeToHierarchyLevel[node.type];
-  let include: TokenType[];
+  let includeOrder: TokenType[];
   const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: TokenType[]}} = JSON.parse(localStorage.getItem('settingsData')!);
 
   if (hierarchyLevel === 'root') {
     // Cannot be changed by user; use default settings
-    include = hierarchyLevelToTokens[hierarchyLevel];
+    includeOrder = hierarchyLevelToTokens[hierarchyLevel];
   } else {
     const dropdown = document.getElementById(`${hierarchyLevel}-verbosity`) as HTMLSelectElement;
     if (dropdown) {
-      include = settingsData[hierarchyLevel][dropdown.value];
+      includeOrder = settingsData[hierarchyLevel][dropdown.value];
     } else { // Not yet initialized - use default of 'high' setting
-      include = settingsData[hierarchyLevel]['high'];
+      includeOrder = settingsData[hierarchyLevel]['high'];
     }
   }
 
   const description = [];
   for (const [token, desc] of node.description.entries()) {
-    if (include.includes(token)) {
-      description.push(desc);
+    if (includeOrder.includes(token)) {
+      description[includeOrder.indexOf(token)] = desc;
     }
   }
 

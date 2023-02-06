@@ -85,7 +85,10 @@ import "./TreeStyle.css";
  * @param ul The {@link HTMLElement} corresponding to the tree root
  */
 export function rerenderTreeDescription(tree: AccessibilityTree, ul: HTMLElement){
-  // Tree structure is ul -> li[] | table, li -> [span, ul] | span
+  // Tree structure is:
+  // ul -> li[] | table
+  // li -> [span, ul] | span
+  // span, table have no children
   
   if (ul.children.length) {
     for (const li of ul.children) {

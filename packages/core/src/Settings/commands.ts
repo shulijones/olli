@@ -1,14 +1,45 @@
 import { AccessibilityTree, AccessibilityTreeNode, tokenType, TokenType, hierarchyLevel, HierarchyLevel } from "../Structure/Types";
 import { Tree } from "../Render/TreeView/Tree";
 import { htmlNodeToTree } from "../Render/TreeView";
-import { updateVerbosityDescription } from "./index";
+import { updateVerbosityDescription, getCurrentlyChecked } from "./index";
 
 export function addMenuCommands(menu: HTMLElement, t: Tree) {
   menu.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       // "Close" menu by moving focus back to the user's previous position in the tree
       t.setFocusToItem(t.lastFocusedItem);
-    }
+    } else if (event.altKey && event.key === 'ArrowUp') {
+      // Reorder custom preset checkboxes
+      const thisCheckbox = document.activeElement as HTMLInputElement;
+
+      if (thisCheckbox && thisCheckbox.type && thisCheckbox.type === 'checkbox') {
+        const thisDiv = thisCheckbox.parentNode! as HTMLElement;
+        const previousDiv = thisDiv.previousElementSibling;
+        if (previousDiv != null) {
+          // Change menu ordering
+          // Note: don't want to call insertBefore(thisDiv, previousDiv)
+          // because first parameter to insertBefore loses focus
+          thisDiv.insertAdjacentElement('afterend', previousDiv);
+          thisCheckbox.focus();
+          thisCheckbox.setAttribute('aria-active', 'true');
+
+          const hierarchyLevel = thisCheckbox.id.split('-')[0];
+          srSpeakingHack(getCurrentlyChecked(hierarchyLevel).join(', '));
+        }
+      }
+    } else if (event.altKey && event.key === 'ArrowDown') {
+      const thisCheckbox = document.activeElement as HTMLInputElement;
+      if (thisCheckbox && thisCheckbox.type && thisCheckbox.type === 'checkbox') {
+        const thisDiv = thisCheckbox.parentNode! as HTMLElement;
+        const nextDiv = thisDiv.nextElementSibling;
+        if (nextDiv != null) {
+          thisDiv.parentNode!.insertBefore(nextDiv, thisDiv);
+
+          const hierarchyLevel = thisCheckbox.id.split('-')[0];
+          srSpeakingHack(getCurrentlyChecked(hierarchyLevel).join(', '));
+        }
+      }
+    } 
   })
 }
 
@@ -60,9 +91,7 @@ export function addTreeCommands(treeElt: HTMLElement, tree: AccessibilityTree, t
       const command = "." + token;
       if (t.keylog.slice(t.keylog.length - command.length) === command) {
         const currentNode = document.activeElement! as HTMLElement;
-        console.log('curnode is', currentNode);
         const treeNode: AccessibilityTreeNode = htmlNodeToTree(currentNode, tree);
-        console.log('curnode desc, token', treeNode.description, token)
         if (treeNode.description.has(token as TokenType)) {
           srSpeakingHack(treeNode.description.get(token as TokenType)!);
           console.log("speaking:", treeNode.description.get(token as TokenType))
@@ -72,19 +101,20 @@ export function addTreeCommands(treeElt: HTMLElement, tree: AccessibilityTree, t
       }
     });
 
-    function srSpeakingHack(text: string) {
-      const elt = document.createElement('div');
-      elt.setAttribute('aria-live', 'assertive');
-      document.body.appendChild(elt);
-      
-      window.setTimeout(function () {
-        elt.innerText = text;
-      }, 100);
-
-      window.setTimeout(function () {
-        
-        elt.remove();
-      }, 1000);
-    }
   })
+}
+
+function srSpeakingHack(text: string) {
+  const elt = document.createElement('div');
+  elt.setAttribute('aria-live', 'assertive');
+  document.body.appendChild(elt);
+  
+  window.setTimeout(function () {
+    elt.innerText = text;
+  }, 100);
+
+  window.setTimeout(function () {
+    
+    elt.remove();
+  }, 1000);
 }

@@ -189,7 +189,6 @@ export class TreeItem {
     checkBaseKeys(event: KeyboardEvent) {
         let flag = false;
         const typingToken = this.tree.currentlyTypingToken();
-        if (typingToken) {console.log("typing token (keylog)", this.tree.keylog.slice(-5))}
         switch (event.key) {
             case 'Enter':
             case ' ':
