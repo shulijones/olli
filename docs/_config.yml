@@ -29,7 +29,7 @@ twitter_username: mitvis
 github_username:  mitvis
 
 # Build settings
-# theme: minima
+theme: minima
 # plugins:
 #   - jekyll-feed
 
