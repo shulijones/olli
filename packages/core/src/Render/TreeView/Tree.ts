@@ -284,7 +284,10 @@ export class Tree {
     }
 
     currentlyTypingToken = () => {
-        return (tokenType.find(token => startEndOverlap(this.keylog, "." + token) > 0))
+        // don't activate any other commands if writing a preset name
+        if (document.activeElement && document.activeElement.id.endsWith('custom-name')) {return true;}
+
+        return (tokenType.find(token => startEndOverlap(this.keylog, "." + token) > 0));
 
        function startEndOverlap(endOverlaps: string, startOverlaps: string): number {
             let overlapLen = Math.min(startOverlaps.length, endOverlaps.length);

@@ -8,7 +8,7 @@ export function addMenuCommands(menu: HTMLElement, t: Tree) {
     if (event.key === 'Escape') {
       // "Close" menu by moving focus back to the user's previous position in the tree
       t.setFocusToItem(t.lastFocusedItem);
-    } else if (event.altKey && event.key === 'ArrowUp') {
+    } else if (event.shiftKey && event.key === 'ArrowUp') {
       // Reorder custom preset checkboxes
       const thisCheckbox = document.activeElement as HTMLInputElement;
 
@@ -27,7 +27,7 @@ export function addMenuCommands(menu: HTMLElement, t: Tree) {
           srSpeakingHack(getCurrentlyChecked(hierarchyLevel).join(', '));
         }
       }
-    } else if (event.altKey && event.key === 'ArrowDown') {
+    } else if (event.shiftKey && event.key === 'ArrowDown') {
       const thisCheckbox = document.activeElement as HTMLInputElement;
       if (thisCheckbox && thisCheckbox.type && thisCheckbox.type === 'checkbox') {
         const thisDiv = thisCheckbox.parentNode! as HTMLElement;
