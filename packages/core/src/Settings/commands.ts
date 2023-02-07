@@ -5,10 +5,11 @@ import { updateVerbosityDescription, getCurrentlyChecked } from "./index";
 
 export function addMenuCommands(menu: HTMLElement, t: Tree) {
   menu.addEventListener('keydown', (event) => {
+    console.log(event);
     if (event.key === 'Escape') {
       // "Close" menu by moving focus back to the user's previous position in the tree
       t.setFocusToItem(t.lastFocusedItem);
-    } else if (event.shiftKey && event.key === 'ArrowUp') {
+    } else if (event.altKey && event.key === 'ArrowLeft') {
       // Reorder custom preset checkboxes
       const thisCheckbox = document.activeElement as HTMLInputElement;
 
@@ -27,7 +28,7 @@ export function addMenuCommands(menu: HTMLElement, t: Tree) {
           srSpeakingHack(getCurrentlyChecked(hierarchyLevel).join(', '));
         }
       }
-    } else if (event.shiftKey && event.key === 'ArrowDown') {
+    } else if (event.altKey && event.key === 'ArrowRight') {
       const thisCheckbox = document.activeElement as HTMLInputElement;
       if (thisCheckbox && thisCheckbox.type && thisCheckbox.type === 'checkbox') {
         const thisDiv = thisCheckbox.parentNode! as HTMLElement;
