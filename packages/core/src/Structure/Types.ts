@@ -11,6 +11,11 @@ export type TokenType = typeof tokenType[number];
 export const hierarchyLevel = ['root', 'facet', 'axis', 'section', 'datapoint'] as const;
 export type HierarchyLevel = typeof hierarchyLevel[number];
 
+export enum tokenLength {
+  Short,
+  Long
+}
+
 export const nodeTypeToHierarchyLevel: {[k in NodeType]: HierarchyLevel} = {
   'multiView': 'root',
   'chart': 'facet',
@@ -48,7 +53,7 @@ export type AccessibilityTreeNode = {
     type: NodeType,
     parent: AccessibilityTreeNode | null,
     selected: OlliDatum[],
-    description: Map<TokenType, string>,
+    description: Map<TokenType, string[]>,
     children: AccessibilityTreeNode[]
     tableKeys?: string[],
     filterValue?: FilterValue,

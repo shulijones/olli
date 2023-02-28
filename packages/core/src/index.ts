@@ -24,7 +24,6 @@ export function olli(olliVisSpec: OlliVisSpec, config?: OlliConfigOptions): HTML
     const tree: AccessibilityTree = olliVisSpecToTree(olliVisSpec);
 
     const htmlRendering: HTMLElement = document.createElement("div");
-    // htmlRendering.classList.add('olli-vis');
 
     config = {
         renderType: config?.renderType || 'tree'
@@ -37,12 +36,14 @@ export function olli(olliVisSpec: OlliVisSpec, config?: OlliConfigOptions): HTML
         case ('tree'):
         default:
             const menu = renderMenu(tree);
+            menu.setAttribute('style', 'display: none');
+            menu.setAttribute('aria-hidden', 'true');
             htmlRendering.appendChild(menu);
 
             const ul = renderTree(tree);
             const container = document.createElement('div');
-            container.classList.add('olli-vis'); // TODO sort out exactly what's happening here
-            container.appendChild(ul)
+            container.classList.add('olli-vis');
+            container.appendChild(ul);
             htmlRendering.appendChild(container);
             const t = new Tree(ul);
             t.init();

@@ -1,8 +1,8 @@
-import { AccessibilityTree, AccessibilityTreeNode, TokenType, HierarchyLevel, nodeTypeToHierarchyLevel, hierarchyLevelToTokens } from "../Structure/Types";
+import { AccessibilityTree, AccessibilityTreeNode, TokenType, tokenType, tokenLength, HierarchyLevel, nodeTypeToHierarchyLevel, hierarchyLevelToTokens } from "../Structure/Types";
 import { renderTree, rerenderTreeDescription } from "../Render/TreeView"
 import { Tree } from "../Render/TreeView/Tree"
 import { tokenDescs, defaultSettingsData } from "./data"
-import { addMenuCommands, addTreeCommands } from "./commands"
+import { srSpeakingHack } from "./commands"
 
 /**
  * Constructs the settings menu from the settings objects above
@@ -12,7 +12,7 @@ import { addMenuCommands, addTreeCommands } from "./commands"
 export function renderMenu(tree: AccessibilityTree): HTMLElement {
   // Get saved menu settings if they exist, otherwise save the default settings
   const storedData = localStorage.getItem('settingsData');
-  let settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: TokenType[]}};
+  let settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: [TokenType, tokenLength][]}};
   if (storedData) {
     settingsData = JSON.parse(storedData);
   } else {
@@ -23,10 +23,9 @@ export function renderMenu(tree: AccessibilityTree): HTMLElement {
   // Make the menu container
   const root = document.createElement("fieldset");
   root.setAttribute("id", "settings");
-  root.setAttribute("tabindex", "0");
-  root.setAttribute("accesskey", "m");
 
   const legend = document.createElement("legend");
+  legend.setAttribute("tabindex", "0");
   legend.innerText = "Settings Menu";
   root.appendChild(legend);
 
@@ -52,8 +51,8 @@ export function renderMenu(tree: AccessibilityTree): HTMLElement {
 }
 
 function makeIndivVerbosityMenu(hierarchyLevel: Exclude<HierarchyLevel, 'root'>, tree: AccessibilityTree) {
-  const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: TokenType[]}} = JSON.parse(localStorage.getItem('settingsData')!);
-  const options: {[k: string]: TokenType[]} = settingsData[hierarchyLevel];
+  const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: [TokenType, tokenLength][]}} = JSON.parse(localStorage.getItem('settingsData')!);
+  const options: {[k: string]: [TokenType, tokenLength][]} = settingsData[hierarchyLevel];
 
   // Make the dropdown container
   const dropdown = document.createElement('select');
@@ -67,8 +66,8 @@ function makeIndivVerbosityMenu(hierarchyLevel: Exclude<HierarchyLevel, 'root'>,
   label.innerText = capitalizeFirst(`${hierarchyLevel} verbosity:`);
 
   const info = document.createElement('span');
-  info.setAttribute('tabindex', '0')
-  info.innerText = `Description: ${options[Object.keys(options)[0]].join(', ')}`;
+  info.setAttribute('tabindex', '0');
+  info.innerText = 'Description: ' + prettifyTokenTuples(options[Object.keys(options)[0]]);
 
   // Add all preset options, plus 'custom' to make a new preset
   for (let option of Object.keys(options)) {
@@ -82,6 +81,12 @@ function makeIndivVerbosityMenu(hierarchyLevel: Exclude<HierarchyLevel, 'root'>,
   custom.value = 'custom';
   dropdown.appendChild(custom);
 
+  dropdown.addEventListener('change', (event) => {
+    if (dropdown.value !== 'custom') {
+      srSpeakingHack(`${dropdown.id.split("-")[0]} verbosity set to ${dropdown.value}`);
+    }
+  })
+
   const container = document.createElement('div');
   container.id = `${hierarchyLevel}-verbosity-container`;
   container.appendChild(label);
@@ -92,7 +97,7 @@ function makeIndivVerbosityMenu(hierarchyLevel: Exclude<HierarchyLevel, 'root'>,
 }
 
 export function updateVerbosityDescription(dropdown: HTMLSelectElement, tree: AccessibilityTree) {
-  const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: TokenType[]}} = JSON.parse(localStorage.getItem('settingsData')!);
+  const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: [TokenType, tokenLength][]}} = JSON.parse(localStorage.getItem('settingsData')!);
   const hierarchyLevel = dropdown.id.split('-')[0] as Exclude<HierarchyLevel, 'root'>;
   const customMenu = document.getElementById(`${hierarchyLevel}-custom`)!;
   const descriptionText = dropdown.nextElementSibling! as HTMLElement;
@@ -109,8 +114,7 @@ export function updateVerbosityDescription(dropdown: HTMLSelectElement, tree: Ac
 
     // Updates based on the new setting:
     // description tokens listed in the menu
-    descriptionText.innerText =
-      `Description: ${settingsData[hierarchyLevel][dropdown.value].join(', ')}`;
+    descriptionText.innerText = 'Description: ' + prettifyTokenTuples(settingsData[hierarchyLevel][dropdown.value]);
     // node description in the tree
     rerenderTreeDescription(tree, document.getElementById('tree-root')!);
   }
@@ -119,7 +123,7 @@ export function updateVerbosityDescription(dropdown: HTMLSelectElement, tree: Ac
 function makeIndivCustomMenu(hierarchyLevel: Exclude<HierarchyLevel, 'root'>, tree: AccessibilityTree) {
   const tokens = hierarchyLevelToTokens[hierarchyLevel];
 
-  // Create overall container, plus one just for checkboxes
+  // Create overall container, plus one just for length dropdowns
   const container = document.createElement('div');
   container.id = `${hierarchyLevel}-custom`;
 
@@ -134,18 +138,24 @@ function makeIndivCustomMenu(hierarchyLevel: Exclude<HierarchyLevel, 'root'>, tr
   nameLabel.setAttribute('for', `${hierarchyLevel}-custom-name`);
   nameLabel.innerText = 'Custom preset name';
 
-  // Create individual checkboxes
+  // Create individual dropdowns
   for (let token of tokens) {
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.id = `${hierarchyLevel}-${token}`;
+    const dropdown = document.createElement('select');
+    dropdown.id = `${hierarchyLevel}-${token}`;
 
+    for (const option of ['off', 'short', 'long']) {
+      let opt = document.createElement('option');
+      opt.innerText = option;
+      opt.value = option;
+      dropdown.appendChild(opt);
+    }
+    
     const label = document.createElement('label');
     label.setAttribute('for', `${hierarchyLevel}-${token}`);
     label.innerText = tokenDescs[token];
 
     const div = document.createElement('div');
-    div.appendChild(input);
+    div.appendChild(dropdown);
     div.appendChild(label);
     checkboxContainer.append(div);
   }
@@ -171,9 +181,9 @@ function savePreset(hierarchyLevel: Exclude<HierarchyLevel, 'root'>, tree: Acces
   customMenu.setAttribute('aria-hidden', 'true');
   
   // Store the new preset in settingsData
-  const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: TokenType[]}} = JSON.parse(localStorage.getItem('settingsData')!);
+  const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: [TokenType, tokenLength][]}} = JSON.parse(localStorage.getItem('settingsData')!);
   const presetName = (document.getElementById(`${hierarchyLevel}-custom-name`)! as HTMLInputElement).value;
-  settingsData[hierarchyLevel][presetName] = getCurrentlyChecked(hierarchyLevel);
+  settingsData[hierarchyLevel][presetName] = getCurrentCustom(hierarchyLevel);
   localStorage.setItem('settingsData', JSON.stringify(settingsData));
   updateVerbosityDropdown(hierarchyLevel);
   
@@ -186,22 +196,26 @@ function savePreset(hierarchyLevel: Exclude<HierarchyLevel, 'root'>, tree: Acces
   dropdown.setAttribute('aria-active', 'true');
 
   function updateVerbosityDropdown(hierarchyLevel: string) {
-    const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: TokenType[]}} = JSON.parse(localStorage.getItem('settingsData')!);
+    const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: [TokenType, tokenLength][]}} = JSON.parse(localStorage.getItem('settingsData')!);
     const oldMenu = document.getElementById(`${hierarchyLevel}-verbosity-container`);
     oldMenu!.replaceWith(makeIndivVerbosityMenu(hierarchyLevel as Exclude<HierarchyLevel, 'root'>, tree));
   }
 }
 
-export function getCurrentlyChecked(hierarchyLevel: string) {
-  const tokens: TokenType[] = []
+export function getCurrentCustom(hierarchyLevel: string) {
+  const tokens: [TokenType, tokenLength][] = []
   for (let tokenOption of document.getElementById(`${hierarchyLevel}-custom-options`)!.children) {
-    const checkbox = tokenOption!.firstElementChild! as HTMLInputElement;
-    if (checkbox.checked) {
-      tokens.push(checkbox.id.split('-')[1] as TokenType);
+    const dropdown = tokenOption!.firstElementChild! as HTMLInputElement;
+    if (dropdown.value === 'long') {
+      tokens.push([dropdown.id.split('-')[1] as TokenType, tokenLength.Long]);
+    } else if (dropdown.value === 'short') {
+      tokens.push([dropdown.id.split('-')[1] as TokenType, tokenLength.Short]);
     }
   }
   return tokens;
 }
+
+export const focusTokens = Object.fromEntries(tokenType.map(token => [token, false]));
 
 /**
  * Given a node with all possible description tokens, return a formatted string
@@ -213,24 +227,29 @@ export function getCurrentlyChecked(hierarchyLevel: string) {
 export function getDescriptionWithSettings(node: AccessibilityTreeNode): string {
   const hierarchyLevel = nodeTypeToHierarchyLevel[node.type];
   let includeOrder: TokenType[];
-  const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: TokenType[]}} = JSON.parse(localStorage.getItem('settingsData')!);
+  let tokenLengths: {[k in string]: tokenLength} = {}; // TODO string is actually TokenType but gave up on typing
+  const settingsData: { [k in Exclude<HierarchyLevel, 'root'>]: {[k: string]: [TokenType, tokenLength][]}} = JSON.parse(localStorage.getItem('settingsData')!);
 
   if (hierarchyLevel === 'root') {
     // Cannot be changed by user; use default settings
     includeOrder = hierarchyLevelToTokens[hierarchyLevel];
+    tokenLengths = Object.fromEntries(includeOrder.map(token => [token as TokenType, tokenLength.Long]));
   } else {
     const dropdown = document.getElementById(`${hierarchyLevel}-verbosity`) as HTMLSelectElement;
-    if (dropdown) {
-      includeOrder = settingsData[hierarchyLevel][dropdown.value];
-    } else { // Not yet initialized - use default of 'high' setting
-      includeOrder = settingsData[hierarchyLevel]['high'];
-    }
+    const value = dropdown ? dropdown.value : 'high'; // If not yet initialized, use default of 'high' setting
+    includeOrder = settingsData[hierarchyLevel][value].map(x => x[0]);
+    tokenLengths = Object.fromEntries(settingsData[hierarchyLevel][value]);
   }
 
   const description = [];
   for (const [token, desc] of node.description.entries()) {
-    if (includeOrder.includes(token)) {
-      description[includeOrder.indexOf(token)] = desc;
+    if (includeOrder.includes(token) || focusTokens[token]) {
+      if (focusTokens[token]) { // put it up front
+        length = tokenLengths[token] ? tokenLengths[token] : 0; // default to short if no info
+        description.unshift(desc[length]);
+      } else { // use original order
+        description[includeOrder.indexOf(token)] = desc[tokenLengths[token]];
+      }
     }
   }
 
@@ -243,4 +262,12 @@ export function getDescriptionWithSettings(node: AccessibilityTreeNode): string 
 
 function capitalizeFirst(s: string) {
   return s.slice(0, 1).toUpperCase() + s.slice(1)
+}
+
+export function prettifyTokenTuples(tups: [TokenType, tokenLength][]) {
+  let result = '';
+  for (const [option, length] of tups) {
+    result += `${option} (${tokenLength[length]}), `
+  }
+ return result.slice(0, -2);
 }
